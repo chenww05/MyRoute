@@ -116,11 +116,16 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 					renderDirections(result, rendererOptions, 0);
 					break;
 				case 'weather':
+					
 					renderDirections(result, rendererOptions, 1);
 					break;
 				case 'restaurant':
 					var score = getYelpScore(result.routes[0]);
 					renderDirections(result, rendererOptions, 2);
+					break;
+				case 'beauty':
+					var score = getFlickrScore(result.routes[0]);
+					renderDirections(result, rendererOptions, 0);
 					break;
 				default:
 					renderDirections(result, rendererOptions, result.routes.length);
