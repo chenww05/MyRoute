@@ -150,7 +150,8 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 					renderDirections(result, rendererOptions, best);
 					break;
 				case 'beauty':
-					var score = getFlickrScore(result.routes[0]);
+					var score = getFlickrScore(result.routes[0],5);
+alert(score);
 					renderDirections(result, rendererOptions, 0);
 					break;
 				default:
