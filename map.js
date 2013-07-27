@@ -109,6 +109,8 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 		if(all_route)
 		{
 			var rendererOptions = getRendererOptions(true);
+			var rate = 5;
+
 			switch(preference)
 			//for (var i = 0; i < result.routes.length; i++)
 			{
@@ -128,16 +130,15 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 				case 'restaurant':
 					var best = 0;
 					var max = 0;
-					var rate = 5;
 					for (var i = 0; i < result.routes.length; i++)
 					{
 						var rep = getYelpScore(result.routes[i], rate);
 						var sum = 0;
-						for(var j = 0; j< 1; j++){
-							var record = JSON.parse(rep[i]);
+						for(var j = 0; j< rep.length; j++){
+							var record = JSON.parse(rep[j]);
 							sum += record.total;
 						}
-						sum = sum / rate;
+						sum = Math.round(sum / rate);
 						var msg = "<p>Route " + i + " has " + sum + " restaurants on average</p>";
 						
 						document.getElementById("updateArea").innerHTML =  document.getElementById("updateArea").innerHTML + msg ;
@@ -150,9 +151,28 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 					renderDirections(result, rendererOptions, best);
 					break;
 				case 'beauty':
-					var score = getFlickrScore(result.routes[0],5);
-alert(score);
-					renderDirections(result, rendererOptions, 0);
+					var best = 0;
+					var max = 0;
+					for (var i = 0; i < result.routes.length; i++)
+					{
+						var rep = getFlickrScore(result.routes[i], rate);
+						//alert(rep.length);
+						var sum = 0;
+						for(var j = 0; j< rep.length; j++){
+							var record = JSON.parse(rep[j]);							
+							sum += Number(record.photos.total);
+						}
+						sum = Math.round(sum / rate);
+						var msg = "<p>Route " + i + " has " + sum + " photos on average</p>";
+						
+						document.getElementById("updateArea").innerHTML =  document.getElementById("updateArea").innerHTML + msg ;
+						
+						if(sum > max){
+							max = sum;
+							best = i;
+						} 
+					}
+					renderDirections(result, rendererOptions, best);
 					break;
 				default:
 					renderDirections(result, rendererOptions, result.routes.length);
