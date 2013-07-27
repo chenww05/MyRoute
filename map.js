@@ -124,8 +124,29 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 					renderDirections(result, rendererOptions, 0);
 					break;
 				case 'weather':
-					
-					renderDirections(result, rendererOptions, 1);
+					var best = 0;
+					var max = 0;
+					for (var i = 0; i < result.routes.length; i++)
+					{
+						var rep = getWeatherScore(result.routes[i], rate);
+//alert(rep);
+						var sum = 0;
+						for(var j = 0; j< rep.length; j++){
+							var record = JSON.parse(rep[j]);
+//alert(record.main.temp);
+							sum += record.main.temp;
+						}
+						sum = Math.round(sum / rate);
+						var msg = "<p>Route " + i + " is " + sum + " 'F</p>";
+						
+						document.getElementById("updateArea").innerHTML =  document.getElementById("updateArea").innerHTML + msg ;
+						
+						if(sum > max){
+							max = sum;
+							best = i;
+						} 
+					}
+					renderDirections(result, rendererOptions, best);
 					break;
 				case 'restaurant':
 					var best = 0;
