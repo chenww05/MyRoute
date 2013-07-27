@@ -112,6 +112,12 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 			switch(preference)
 			//for (var i = 0; i < result.routes.length; i++)
 			{
+			case 'all':
+				for (var i = 0; i < result.routes.length; i++)
+				{
+					renderDirections(result, rendererOptions, i);
+				}
+				break;
 				case 'safety':
 					renderDirections(result, rendererOptions, 0);
 					break;
@@ -120,8 +126,28 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 					renderDirections(result, rendererOptions, 1);
 					break;
 				case 'restaurant':
-					var score = getYelpScore(result.routes[0]);
-					renderDirections(result, rendererOptions, 2);
+					var best = 0;
+					var max = 0;
+					var rate = 5;
+					for (var i = 0; i < result.routes.length; i++)
+					{
+						var rep = getYelpScore(result.routes[i], rate);
+						var sum = 0;
+						for(var j = 0; j< 1; j++){
+							var record = JSON.parse(rep[i]);
+							sum += record.total;
+						}
+						sum = sum / rate;
+						var msg = "<p>Route " + i + " has " + sum + " restaurants on average</p>";
+						
+						document.getElementById("updateArea").innerHTML =  document.getElementById("updateArea").innerHTML + msg ;
+						
+						if(sum > max){
+							max = sum;
+							best = i;
+						} 
+					}
+					renderDirections(result, rendererOptions, best);
 					break;
 				case 'beauty':
 					var score = getFlickrScore(result.routes[0]);
