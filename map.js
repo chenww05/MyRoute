@@ -104,16 +104,18 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 		provideRouteAlternatives: all_route
   };
   directionsService.route(request, function(result, status) {
+
   if (status == google.maps.DirectionsStatus.OK)
   {
 		if(all_route)
 		{
 			var rendererOptions = getRendererOptions(true);
 			var rate = 5;
-
+			document.getElementById("updateArea").innerHTML = "";
+			document.getElementById("photoArea").innerHTML= "";
 			switch(preference)
-			//for (var i = 0; i < result.routes.length; i++)
 			{
+			
 			case 'all':
 				for (var i = 0; i < result.routes.length; i++)
 				{
@@ -121,28 +123,47 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 				}
 				break;
 				case 'safety':
-					renderDirections(result, rendererOptions, 0);
-					break;
-				case 'weather':
 					var best = 0;
-					var max = 0;
+					var min = 10000;
 					for (var i = 0; i < result.routes.length; i++)
 					{
-						var rep = getWeatherScore(result.routes[i], rate);
-//alert(rep);
+						var rep = getCrimeScore(result.routes[i], rate);
 						var sum = 0;
 						for(var j = 0; j< rep.length; j++){
 							var record = JSON.parse(rep[j]);
-//alert(record.main.temp);
-							sum += record.main.temp;
+							sum += record.crimes.length;
+							//alert(record.crimes.length);
 						}
 						sum = Math.round(sum / rate);
-						var msg = "<p>Route " + i + " is " + sum + " 'F</p>";
+						var msg = "<p>Route " + i + " has " + sum + " crimes on average</p>";
 						
 						document.getElementById("updateArea").innerHTML =  document.getElementById("updateArea").innerHTML + msg ;
 						
-						if(sum > max){
-							max = sum;
+						if(sum < min){
+							min = sum;
+							best = i;
+						} 
+					}
+					renderDirections(result, rendererOptions, best);
+					break;
+				case 'weather':
+					var best = 0;
+					var min = 100000;
+					for (var i = 0; i < result.routes.length; i++)
+					{
+						var rep = getWeatherScore(result.routes[i], rate);
+						var sum = 0;
+						for(var j = 0; j< rep.length; j++){
+							var record = JSON.parse(rep[j]);
+							sum += record.main.temp_max;
+						}
+						sum = sum / rate /10;
+						var msg = "<p>The max temp of route " + i + " is " + sum + "  C on average</p>";
+						
+						document.getElementById("updateArea").innerHTML +=  msg ;
+						
+						if(sum < min){
+							min = sum;
 							best = i;
 						} 
 					}
@@ -162,7 +183,7 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 						sum = Math.round(sum / rate);
 						var msg = "<p>Route " + i + " has " + sum + " restaurants on average</p>";
 						
-						document.getElementById("updateArea").innerHTML =  document.getElementById("updateArea").innerHTML + msg ;
+						document.getElementById("updateArea").innerHTML += msg ;
 						
 						if(sum > max){
 							max = sum;
@@ -174,6 +195,7 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 				case 'beauty':
 					var best = 0;
 					var max = 0;
+					var bestRoute ;
 					for (var i = 0; i < result.routes.length; i++)
 					{
 						var rep = getFlickrScore(result.routes[i], rate);
@@ -191,12 +213,25 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 						if(sum > max){
 							max = sum;
 							best = i;
+							bestRoute = rep;
 						} 
+					}
+					var rep = bestRoute;
+					for(var j = 0; j < rep.length; j++){ // points
+						var record = JSON.parse(rep[j]);
+						for (var k = 0; k < 2; k++){
+							photo = record.photos.photo[k];
+							t_url = "http://farm" + photo.farm + ".static.flickr.com/" +
+								photo.server + "/" + photo.id + "_" + photo.secret + "_t.jpg";
+							p_url = "http://www.flickr.com/photos/" + photo.owner + "/" + photo.id;
+							var msg = '<a href="' + p_url + '">' + '<img alt="' + photo.title + '"src="' + t_url + '"/>' + '</a>';
+							document.getElementById("photoArea").innerHTML += msg;
+						}
 					}
 					renderDirections(result, rendererOptions, best);
 					break;
 				default:
-					renderDirections(result, rendererOptions, result.routes.length);
+					renderDirections(result, rendererOptions, 0);
 			}
 		}
 		else
