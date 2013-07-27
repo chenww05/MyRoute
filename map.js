@@ -20,7 +20,7 @@ function drawMap(midpoint) {
 		center: start,
    	mapTypeControl: false
 	}
-	map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+	map = new google.maps.Map(document.getElementById("map_canvas"));
 }
 
 function getRendererOptions(main_route)
@@ -74,9 +74,9 @@ function renderDirections(result, rendererOptions, routeToDisplay)
 	}
 	else
 	{
-		var _colour = '#FF0000';
+		var _colour = '#6CF206';
 		var _stokeWeight = 5;
-		var _strokeOpacity = 0.2;
+		var _strokeOpacity = 1.0;
 		var _suppressMarkers = false;
 	}
 
@@ -96,7 +96,7 @@ function renderDirections(result, rendererOptions, routeToDisplay)
 }
 
 function requestDirections(start, end, routeToDisplay, all_route, preference) {
-
+	//var map = new google.maps.Map(document.getElementById("map_canvas"));
   var request = {
 		origin: start,
 		destination: end,
@@ -104,6 +104,7 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 		provideRouteAlternatives: all_route
   };
   directionsService.route(request, function(result, status) {
+		document.getElementById("updateArea").innerHTML = "";
 
   if (status == google.maps.DirectionsStatus.OK)
   {
@@ -111,7 +112,6 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 		{
 			var rendererOptions = getRendererOptions(true);
 			var rate = 5;
-			document.getElementById("updateArea").innerHTML = "";
 			document.getElementById("photoArea").innerHTML= "";
 			switch(preference)
 			{
@@ -125,6 +125,7 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 				case 'safety':
 					var best = 0;
 					var min = 10000;
+					var bestRoute;
 					for (var i = 0; i < result.routes.length; i++)
 					{
 						var rep = getCrimeScore(result.routes[i], rate);
@@ -135,20 +136,33 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 							//alert(record.crimes.length);
 						}
 						sum = Math.round(sum / rate);
-						var msg = "<p>Route " + i + " has " + sum + " crimes on average</p>";
+						var msg = "Route " + i + " has " + sum + " crimes on average; ";
 						
 						document.getElementById("updateArea").innerHTML =  document.getElementById("updateArea").innerHTML + msg ;
 						
 						if(sum < min){
 							min = sum;
 							best = i;
+							bestRoute = rep;
 						} 
 					}
 					renderDirections(result, rendererOptions, best);
+					var rep = bestRoute;
+					for(var j = 0; j< rep.length; j++){
+						var record = JSON.parse(rep[j]);
+						//sum += record.crimes.length;
+						var msg ;
+						for(var k = 0; k< record.crimes.length && k < 5; k++)
+						{ 
+							msg += record.crimes[0].address;
+						}
+						document.getElementById("photoArea").innerHTML +=  "<p>" + msg + "</p>";
+					}
 					break;
 				case 'weather':
 					var best = 0;
 					var min = 100000;
+					var bestRoute ;
 					for (var i = 0; i < result.routes.length; i++)
 					{
 						var rep = getWeatherScore(result.routes[i], rate);
@@ -157,21 +171,38 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 							var record = JSON.parse(rep[j]);
 							sum += record.main.temp_max;
 						}
-						sum = sum / rate /10;
-						var msg = "<p>The max temp of route " + i + " is " + sum + "  C on average</p>";
+						sum = Math.round(sum / rate *10)/100;
+						var msg = "The max temp of route " + i + " is " + sum + "  C on average; ";
 						
 						document.getElementById("updateArea").innerHTML +=  msg ;
 						
 						if(sum < min){
 							min = sum;
 							best = i;
+							bestRoute = rep;
 						} 
 					}
 					renderDirections(result, rendererOptions, best);
+					var rep = bestRoute;
+					for(var j = 0; j< rep.length; j++){
+						var record = JSON.parse(rep[j]);
+						var icon =  record.weather[0].icon;
+						var image_url = "http://openweathermap.org/img/w/" + icon + ".png";
+						var msg = '<a href="' + image_url + '">' + '<img alt="' + 'Beauty' + '"src="' + image_url + '"/>' + '</a>';
+						document.getElementById("photoArea").innerHTML += msg;
+						var myLatlng = new google.maps.LatLng(record.coord.lat,record.coord.lon);
+						  var marker = new google.maps.Marker({
+						      position: myLatlng,
+						      map: map,
+						      title: 'Hello World!',
+						      icon: image_url
+						  });
+					}
 					break;
 				case 'restaurant':
 					var best = 0;
 					var max = 0;
+					var bestRoute ;
 					for (var i = 0; i < result.routes.length; i++)
 					{
 						var rep = getYelpScore(result.routes[i], rate);
@@ -181,16 +212,43 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 							sum += record.total;
 						}
 						sum = Math.round(sum / rate);
-						var msg = "<p>Route " + i + " has " + sum + " restaurants on average</p>";
+						var msg = "Route " + i + " has " + sum + " restaurants on average; ";
 						
 						document.getElementById("updateArea").innerHTML += msg ;
 						
 						if(sum > max){
 							max = sum;
 							best = i;
+							bestRoute = rep;
 						} 
 					}
 					renderDirections(result, rendererOptions, best);
+					var rep = bestRoute;
+					for(var j = 0; j < rep.length; j++){ // points
+						var record = JSON.parse(rep[j]);
+						for (var k = 0; k < 2; k++){
+							shops = record.businesses;
+							if(shops.length > 2){
+								var image_url=JSON.parse(getYelpPhoto(shops[k].id)).image_url;
+							
+							var msg = '<a href="' + image_url + '">' + '<img alt="' + 'Beauty' + '"src="' + image_url + '"/>' + '</a>';
+							document.getElementById("photoArea").innerHTML += msg;
+							var address = shops[k].location.address + "," + shops[k].location.city +","+
+							+shops[k].location.state_code +","+ shops[k].location.postal_code;
+							
+							geocoder.geocode( { 'address': address}, function(results, status) {
+							      if (status == google.maps.GeocoderStatus.OK) {
+							        var marker = new google.maps.Marker({
+							            map: map,
+							            position: results[0].geometry.location
+							        });
+							      } else {
+							        alert("Geocode was not successful for the following reason: " + status);
+							      }
+							    });
+							}
+						}
+					}
 					break;
 				case 'beauty':
 					var best = 0;
@@ -199,14 +257,13 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 					for (var i = 0; i < result.routes.length; i++)
 					{
 						var rep = getFlickrScore(result.routes[i], rate);
-						//alert(rep.length);
 						var sum = 0;
 						for(var j = 0; j< rep.length; j++){
 							var record = JSON.parse(rep[j]);							
 							sum += Number(record.photos.total);
 						}
 						sum = Math.round(sum / rate);
-						var msg = "<p>Route " + i + " has " + sum + " photos on average</p>";
+						var msg = "Route " + i + " has " + sum + " photos on average; ";
 						
 						document.getElementById("updateArea").innerHTML =  document.getElementById("updateArea").innerHTML + msg ;
 						
@@ -216,9 +273,25 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 							bestRoute = rep;
 						} 
 					}
+					renderDirections(result, rendererOptions, best);
 					var rep = bestRoute;
 					for(var j = 0; j < rep.length; j++){ // points
-						var record = JSON.parse(rep[j]);
+						
+						var idx = result.routes[best].overview_path.length / rate * j;
+						
+							console.log(idx);
+							var point = result.routes[best].overview_path[idx];
+							console.log(point);
+							var lat = point.lat();
+							var lng = point.lng();
+							var myLatlng = new google.maps.LatLng(lat,lng);
+							  var marker = new google.maps.Marker({
+							      position: myLatlng,
+							      map: map,
+							      title: 'Hello World!',
+							      //icon: image_url
+							  });
+							  var record = JSON.parse(rep[j]);
 						for (var k = 0; k < 2; k++){
 							photo = record.photos.photo[k];
 							t_url = "http://farm" + photo.farm + ".static.flickr.com/" +
@@ -228,7 +301,7 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 							document.getElementById("photoArea").innerHTML += msg;
 						}
 					}
-					renderDirections(result, rendererOptions, best);
+					
 					break;
 				default:
 					renderDirections(result, rendererOptions, 0);
