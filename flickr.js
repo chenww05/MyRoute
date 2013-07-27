@@ -1,4 +1,3 @@
-var req;
 var api_key = "68568a9e4695f65e42c60d28a3e93fea";
 function getFlickrScore(route,rate) {
 	var overview_path = route.overview_path;
@@ -8,15 +7,14 @@ function getFlickrScore(route,rate) {
 		var point = overview_path[i * sampling_rate];
 		var lat = point.lat();
 		var lng = point.lng();
-		var theUrl = "http://api.flickr.com/services/rest/?&method=flickr.photos.search&api_key=" 
+		var theUrl = "http://10.87.52.172:8080/Dynamic/Flickr?api_key=" 
 			+ api_key + "&lat=" + lat	+ "&lon=" + lng + "&format=json&nojsoncallback=1&radius=32";
-		var responseText = synchronous_ajax(theUrl);
-		
+		var responseText = synchronous_ajax_flickr(theUrl);
 		myres[i] = responseText;
 	}
 	return myres;
 }
-function synchronous_ajax(url, passData) {
+function synchronous_ajax_flickr(url, passData) {
 	if (window.XMLHttpRequest) {
 		AJAX = new XMLHttpRequest();
 	} else {

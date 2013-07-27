@@ -149,6 +149,9 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 					renderDirections(result, rendererOptions, best);
 					var rep = bestRoute;
 					for(var j = 0; j< rep.length; j++){
+						
+						
+						
 						var record = JSON.parse(rep[j]);
 						//sum += record.crimes.length;
 						var msg ;
@@ -157,6 +160,35 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 							msg += record.crimes[0].address;
 						}
 						document.getElementById("photoArea").innerHTML +=  "<p>" + msg + "</p>";
+						
+						var len = record.crimes.length;
+						var image_url = '/Dynamic/img/';
+						if(len==50){
+							image_url += 'black.png';
+						}else if(len >= 30){
+							image_url += 'red.png';
+						}else if(len >= 10){
+							image_url += 'yellow.png';
+						}else {
+							image_url += 'green.png';
+						}
+						
+						var image = {
+								url: image_url,
+								size: new google.maps.Size(20,32)		
+						};
+						
+						var idx = Math.round(result.routes[best].overview_path.length / rate * j);
+						var point = result.routes[best].overview_path[idx];
+						var p_lat = point.lat();
+						var p_lng = point.lng();
+						var myLatlng = new google.maps.LatLng(p_lat,p_lng);
+						  var marker = new google.maps.Marker({
+						      position: myLatlng,
+						      map: map,
+						      //title: 'Hello World!',
+						  icon: image_url
+						  });
 					}
 					break;
 				case 'weather':
@@ -235,12 +267,15 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 							document.getElementById("photoArea").innerHTML += msg;
 							var address = shops[k].location.address + "," + shops[k].location.city +","+
 							+shops[k].location.state_code +","+ shops[k].location.postal_code;
-							
+							var rate = Math.round(shops[k].rating);
+							var image_url = 'img/' + rate +'.png';
+							console.log(image_url);
 							geocoder.geocode( { 'address': address}, function(results, status) {
 							      if (status == google.maps.GeocoderStatus.OK) {
 							        var marker = new google.maps.Marker({
 							            map: map,
-							            position: results[0].geometry.location
+							            position: results[0].geometry.location,
+							            icon:image_url
 							        });
 							      } else {
 							        alert("Geocode was not successful for the following reason: " + status);
@@ -276,22 +311,23 @@ function requestDirections(start, end, routeToDisplay, all_route, preference) {
 					renderDirections(result, rendererOptions, best);
 					var rep = bestRoute;
 					for(var j = 0; j < rep.length; j++){ // points
-						
-						var idx = result.routes[best].overview_path.length / rate * j;
-						
-							console.log(idx);
-							var point = result.routes[best].overview_path[idx];
-							console.log(point);
-							var lat = point.lat();
-							var lng = point.lng();
-							var myLatlng = new google.maps.LatLng(lat,lng);
-							  var marker = new google.maps.Marker({
-							      position: myLatlng,
-							      map: map,
-							      title: 'Hello World!',
-							      //icon: image_url
-							  });
-							  var record = JSON.parse(rep[j]);
+						var idx = Math.round(result.routes[best].overview_path.length / rate * j);
+						var point = result.routes[best].overview_path[idx];
+						var p_lat = point.lat() + 0.05;
+						var p_lng = point.lng() + 0.05;
+						var photo = record.photos.photo[0];
+						var image_url = t_url = "http://farm" + photo.farm + ".static.flickr.com/" +
+						photo.server + "/" + photo.id + "_" + photo.secret + "_t.jpg";
+						console.log(image_url);
+						var myLatlng = new google.maps.LatLng(p_lat,p_lng);
+						  var marker = new google.maps.Marker({
+						      position: myLatlng,
+						      map: map,
+						      //title: 'Hello World!',
+						  icon: image_url,
+						  animation: google.maps.Animation.DROP
+						  });
+						  var record = JSON.parse(rep[j]);
 						for (var k = 0; k < 2; k++){
 							photo = record.photos.photo[k];
 							t_url = "http://farm" + photo.farm + ".static.flickr.com/" +
